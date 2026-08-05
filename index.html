@@ -316,9 +316,9 @@
 
                                     <!-- Manual QR Key Input Fallback -->
                                     <form onsubmit="handleManualScan(event)" class="pt-2">
-                                        <label class="block text-xs font-medium text-slate-600 mb-1">Simulasi Input QR Code Manual</label>
+                                        <label class="block text-xs font-medium text-slate-600 mb-1">Simulasi Input QR Code / NIS Manual</label>
                                         <div class="flex gap-2">
-                                            <input type="text" id="manual-qr-input" placeholder="Masukkan SISWA-NIS-xxx" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                            <input type="text" id="manual-qr-input" placeholder="Masukkan NIS atau Key QR (misal: 1001 / SISWA-1001-xxxx)" class="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                             <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-xl transition">Submit</button>
                                         </div>
                                     </form>
@@ -892,6 +892,7 @@
             isProcessingScan = true;
 
             const qrCodeKey = String(rawQrCodeKey || '').trim();
+            const upperKey = qrCodeKey.toUpperCase();
 
             try {
                 const now = new Date();
@@ -916,21 +917,37 @@
                     status = 'Luar Jam Operasional';
                 }
 
-                // Find student by qr_code_key
+                // Find student by qr_code_key OR nis (case-insensitive & whitespace tolerant)
                 let student = null;
                 if (!isMockMode && supabaseClient) {
                     try {
-                        const { data, error } = await supabaseClient.from('students').select('*, classes(name)').eq('qr_code_key', qrCodeKey).single();
-                        if (!error) student = data;
-                    } catch(e){}
-                } else {
-                    student = mockData.students.find(s => String(s.qr_code_key).trim() === qrCodeKey);
+                        // 1. Try matching qr_code_key (case-insensitive)
+                        let { data, error } = await supabaseClient.from('students').select('*, classes(name)').ilike('qr_code_key', qrCodeKey).maybeSingle();
+                        
+                        // 2. Fallback: Try matching NIS directly
+                        if (!data) {
+                            const resNis = await supabaseClient.from('students').select('*, classes(name)').eq('nis', qrCodeKey).maybeSingle();
+                            data = resNis.data;
+                        }
+                        if (!error && data) student = data;
+                    } catch(e){
+                        console.warn('Supabase student query error:', e);
+                    }
+                }
+                
+                // Fallback to local mock search if not found yet or in mock mode
+                if (!student && mockData && mockData.students) {
+                    student = mockData.students.find(s => {
+                        const sKey = String(s.qr_code_key || '').trim().toUpperCase();
+                        const sNis = String(s.nis || '').trim().toUpperCase();
+                        return sKey === upperKey || sNis === upperKey;
+                    });
                 }
 
                 if (!student) {
-                    showToast('QR Code tidak terdaftar dalam sistem!', 'error');
+                    showToast('QR Code / NIS tidak terdaftar dalam sistem!', 'error');
                     document.getElementById('scan-result-card').className = "bg-rose-50 border-2 border-rose-300 rounded-2xl p-4 text-center transition-all";
-                    document.getElementById('scan-status-text').innerHTML = `<span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-xmark mr-1"></i> QR Code (${qrCodeKey}) Tidak Dikenali</span>`;
+                    document.getElementById('scan-status-text').innerHTML = `<span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-xmark mr-1"></i> QR Code / NIS (${qrCodeKey}) Tidak Dikenali</span>`;
                     return;
                 }
 
@@ -953,10 +970,11 @@
                     } catch (err) {
                         showToast('Gagal simpan ke Supabase: ' + err.message, 'error');
                     }
-                } else {
-                    mockData.attendances.push(attendanceRecord);
-                    saveLocalStorageMock();
                 }
+                
+                // Always sync to mock local storage for instant feedback
+                mockData.attendances.push(attendanceRecord);
+                saveLocalStorageMock();
 
                 // Sound Effect
                 playBeepSound();
@@ -1203,12 +1221,15 @@
 
             if (!isMockMode && supabaseClient) {
                 try {
-                    await supabaseClient.from('students').insert([{ nis, name, class_id, qr_code_key }]);
+                    const { data, error } = await supabaseClient.from('students').insert([{ nis, name, class_id, qr_code_key }]).select().single();
+                    if (error) throw error;
+                    if (data) newStudent.id = data.id;
                 } catch(err){ showToast(err.message, 'error'); return; }
-            } else {
-                mockData.students.push(newStudent);
-                saveLocalStorageMock();
             }
+            
+            // Always push to local mock data & save local storage so scanning works immediately
+            mockData.students.push(newStudent);
+            saveLocalStorageMock();
 
             document.getElementById('input-student-nis').value = '';
             document.getElementById('input-student-name').value = '';
