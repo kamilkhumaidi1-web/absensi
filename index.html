@@ -263,14 +263,14 @@
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-500 mb-1">Kelas Asal</label>
-                            <select id="selectKelasAsal" onchange="renderSiswaKelasList()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm">
+                            <select id="selectKelasAsal" onchange="renderSiswaKelasList()" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
                                 <option value="">-- Pilih Kelas Asal --</option>
                             </select>
                         </div>
 
                         <div id="wrapperKelasTujuan">
                             <label class="block text-xs font-semibold text-slate-500 mb-1">Ke Kelas (Tujuan)</label>
-                            <select id="selectKelasTujuan" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm">
+                            <select id="selectKelasTujuan" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-sm focus:ring-2 focus:ring-brand-500">
                                 <option value="">-- Pilih Kelas Tujuan --</option>
                             </select>
                         </div>
@@ -716,7 +716,6 @@
                     </form>
                 </div>
             </section>
-
         </main>
     </div>
 
@@ -756,7 +755,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Jurusan</label>
-                        <select id="siswaJurusan" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs">
+                        <select id="siswaJurusan" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs focus:ring-2 focus:ring-brand-500">
                             <option value="Reguler">Reguler</option>
                             <option value="ATCP">ATCP</option>
                             <option value="ITCP">ITCP</option>
@@ -795,14 +794,14 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Hapus -->
+    <!-- Modal Konfirmasi Hapus Custom -->
     <div id="modalConfirmDelete" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100 p-6 text-center">
             <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h3 class="font-bold text-slate-800 text-lg mb-2">Hapus Data Siswa?</h3>
-            <p class="text-sm text-slate-500 mb-6">Apakah Anda yakin ingin menghapus data siswa ini secara permanen dari database?</p>
+            <p class="text-sm text-slate-500 mb-6">Apakah Anda yakin ingin menghapus data siswa ini secara permanen dari layar dan database?</p>
             <div class="flex justify-center gap-3">
                 <button onclick="closeDeleteModal()" class="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-medium transition">Batal</button>
                 <button onclick="executeDeleteSiswa()" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-medium transition shadow-lg shadow-rose-600/20">Ya, Hapus</button>
@@ -810,7 +809,7 @@
         </div>
     </div>
 
-        <script>
+    <script>
         const SUPABASE_URL = "https://sdfnzwwndfubtnmomvvg.supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkZm56d3duZGZ1YnRubW9tdnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5Mjk3MDQsImV4cCI6MjEwMTUwNTcwNH0.KfvsHOhBvjXI_yNpuneJ2Tb_4EM4KPpeIYgK1ZTePfY";
 
@@ -825,6 +824,15 @@
             console.warn("Supabase tidak terhubung:", err);
         }
 
+        // Fungsi untuk mendapatkan tanggal lokal (WIB/Indonesia) menghindari bug zona waktu UTC
+        function getLocalDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
         const state = {
             currentUser: null,
             currentKelasActionTab: 'naik',
@@ -834,7 +842,8 @@
                 { id: '1', nis: '1001', nama: 'Ahmad Fauzi', sekolah: 'MAM 1', kelas: 'X', jurusan: 'Reguler', rombel: '1', asrama: true, status: 'Aktif', qr_code_key: 'MAM1-1001-FAUZI' },
                 { id: '2', nis: '1002', nama: 'Siti Nurhaliza', sekolah: 'MAM 1', kelas: 'X', jurusan: 'ATCP', rombel: '1', asrama: false, status: 'Aktif', qr_code_key: 'MAM1-1002-SITI' },
                 { id: '3', nis: '1003', nama: 'Budi Santoso', sekolah: 'MAM 1', kelas: 'X', jurusan: 'ITCP', rombel: '1', asrama: true, status: 'Aktif', qr_code_key: 'MAM1-1003-BUDI' },
-                { id: '4', nis: '1004', nama: 'Dewi Lestari', sekolah: 'MAM 1', kelas: 'XI', jurusan: 'M-ICO', rombel: '1', asrama: false, status: 'Aktif', qr_code_key: 'MAM1-1004-DEWI' }
+                { id: '4', nis: '1004', nama: 'Dewi Lestari', sekolah: 'MAM 1', kelas: 'XI', jurusan: 'M-ICO', rombel: '1', asrama: false, status: 'Aktif', qr_code_key: 'MAM1-1004-DEWI' },
+                { id: '5', nis: '1005', nama: 'Eko Prasetyo', sekolah: 'MAM 1', kelas: 'XII', jurusan: 'Reguler', rombel: '1', asrama: true, status: 'Aktif', qr_code_key: 'MAM1-1005-EKO' }
             ],
             gurus: [
                 { id: 'g1', nama: 'Ustadz Abdullah', email: 'guru@sekolah.sch.id', role: 'GURU' }
@@ -844,8 +853,12 @@
                 'XI Reguler 1', 'XI ATCP 1', 'XI ITCP 1', 'XI M-ICO 1',
                 'XII Reguler 1', 'XII ATCP 1', 'XII ITCP 1', 'XII M-ICO 1'
             ],
-            attendance: [],
-            sholatLogs: [],
+            attendance: [
+                { id: 'a1', student_id: '1', nis: '1001', nama: 'Ahmad Fauzi', kelas: 'X Reguler 1', tanggal: getLocalDateString(), jam_masuk: '06:50', jam_pulang: '-', status: 'Tepat Waktu' }
+            ],
+            sholatLogs: [
+                { id: 's1', student_id: '1', nis: '1001', nama: 'Ahmad Fauzi', kelas: 'X Reguler 1', jenis_sholat: 'Sholat Dzuhur', tanggal: getLocalDateString(), jam_scan: '12:15', status: 'Sudah Sholat' }
+            ],
             settings: {
                 masuk_tepat: '07:00',
                 masuk_telat: '08:00',
@@ -938,7 +951,7 @@
             if (state.currentUser.role === 'ADMIN') switchTab('manajemenKelas');
             else switchTab('scanPresensi');
 
-            const today = new Date().toISOString().split('T')[0];
+            const today = getLocalDateString();
             document.getElementById('rekapPresensiDate').value = today;
             document.getElementById('rekapSholatDate').value = today;
 
@@ -1177,14 +1190,21 @@
                 if (index !== -1) state.students[index] = { ...state.students[index], ...payload };
                 showToast('Data siswa berhasil diperbarui!', 'success');
             } else {
-                let newSiswa = { ...payload, id: String(Date.now()) };
+                let newSiswa = { ...payload };
                 if (supabaseClient) {
                     const { data, error } = await supabaseClient.from('students').insert([payload]).select().single();
-                    if (error) { showToast('Gagal simpan ke database: ' + error.message, 'error'); return; }
-                    if (data) newSiswa = data;
+                    if (error) { 
+                        showToast('Gagal simpan ke database Supabase: ' + error.message, 'error'); 
+                        return; 
+                    }
+                    if (data) {
+                        newSiswa = data;
+                    }
+                } else {
+                    newSiswa.id = String(Date.now());
                 }
                 state.students.unshift(newSiswa);
-                showToast('Siswa baru berhasil ditambahkan ke database!', 'success');
+                showToast('Siswa baru berhasil ditambahkan!', 'success');
             }
 
             closeModalSiswa();
@@ -1221,7 +1241,7 @@
                 if (supabaseClient) {
                     const { error } = await supabaseClient.from('students').delete().eq('id', idSiswaToDelete);
                     if (error) {
-                        showToast('Gagal menghapus dari database!', 'error');
+                        showToast('Gagal menghapus dari database: ' + error.message, 'error');
                         return;
                     }
                 }
@@ -1234,6 +1254,8 @@
 
         let html5QrCodePresensi = null;
         let html5QrCodeSholat = null;
+        let isProcessingPresensi = false;
+        let isProcessingSholat = false;
 
         function startPresensiScanner() {
             if (html5QrCodePresensi) return;
@@ -1253,16 +1275,142 @@
         }
 
         async function onScanPresensiSuccess(decodedText) {
+            // Mencegah scan beruntun menumpuk (Cooldown 1.5 detik)
+            if (isProcessingPresensi) return;
+            isProcessingPresensi = true;
+
             const student = state.students.find(s => s.qr_code_key === decodedText || s.nis === decodedText);
             const box = document.getElementById('scanPresensiResult');
-            if (!student) { box.innerHTML = `<p class="text-rose-600 font-bold">QR Tidak Dikenali</p>`; return; }
-            showToast(`Presensi: ${student.nama}`, 'success');
+            if (!student) { 
+                box.innerHTML = `<p class="text-rose-600 font-bold">QR Tidak Dikenali</p>`; 
+                setTimeout(() => { isProcessingPresensi = false; }, 1500);
+                return; 
+            }
+            
+            // Ambil waktu saat ini (Lokal)
+            const today = getLocalDateString();
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            // Tentukan status Masuk / Pulang dan Tepat/Telat
+            const batasTepat = state.settings.masuk_tepat || '07:00';
+            const batasTelat = state.settings.masuk_telat || '08:00';
+            const jamPulangSetting = state.settings.pulang || '15:00';
+            
+            let isPulang = timeString >= jamPulangSetting;
+            let status = 'Tepat Waktu';
+            if (!isPulang) {
+                if (timeString > batasTepat && timeString <= batasTelat) status = 'Terlambat';
+                else if (timeString > batasTelat) status = 'Sangat Terlambat';
+            }
+
+            const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
+            let existing = state.attendance.find(a => a.student_id === student.id && a.tanggal === today);
+            let payload = {};
+
+            if (existing) {
+                if (isPulang && existing.jam_pulang === '-') {
+                    existing.jam_pulang = timeString;
+                    payload = { jam_pulang: timeString };
+                    showToast(`Presensi Pulang: ${student.nama}`, 'success');
+                } else {
+                    showToast(`Siswa ini sudah absen hari ini.`, 'info');
+                    setTimeout(() => { isProcessingPresensi = false; }, 1500);
+                    return; // Mencegah scan ganda berkali-kali
+                }
+            } else {
+                if (isPulang) status = 'Tanpa Keterangan Masuk';
+                const newRecord = {
+                    id: String(Date.now()),
+                    student_id: student.id,
+                    nis: student.nis,
+                    nama: student.nama,
+                    kelas: kelasLengkap,
+                    tanggal: today,
+                    jam_masuk: isPulang ? '-' : timeString,
+                    jam_pulang: isPulang ? timeString : '-',
+                    status: status
+                };
+                state.attendance.push(newRecord);
+                payload = newRecord;
+                showToast(`Presensi Masuk: ${student.nama}`, 'success');
+            }
+
+            // Tampilkan visual di kotak Scanner
+            box.innerHTML = `
+                <div class="text-emerald-500 mb-2"><i class="fa-solid fa-circle-check text-6xl drop-shadow-md"></i></div>
+                <h4 class="font-bold text-slate-800 text-lg">${student.nama}</h4>
+                <p class="text-xs text-slate-500 font-mono">${student.nis} • ${kelasLengkap}</p>
+                <div class="mt-4 inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider">${isPulang ? 'PULANG' : status} • ${timeString}</div>
+            `;
+
+            // Simpan ke Supabase (Jika Online)
+            if (supabaseClient) {
+                try {
+                    if (existing && isPulang) {
+                        await supabaseClient.from('attendance').update(payload).eq('id', existing.id);
+                    } else if (!existing) {
+                        await supabaseClient.from('attendance').insert([payload]);
+                    }
+                } catch(err) {
+                    console.error("Gagal simpan ke database:", err);
+                }
+            }
+
+            // Buka kembali kunci scan setelah 1.5 detik
+            setTimeout(() => { isProcessingPresensi = false; }, 1500);
         }
 
         async function onScanSholatSuccess(decodedText) {
+            // Mencegah scan beruntun menumpuk (Cooldown 1.5 detik)
+            if (isProcessingSholat) return;
+            isProcessingSholat = true;
+
             const student = state.students.find(s => s.qr_code_key === decodedText || s.nis === decodedText);
-            if (!student) return;
+            const box = document.getElementById('scanSholatResult');
+            if (!student) { 
+                box.innerHTML = `<p class="text-rose-600 font-bold">QR Tidak Dikenali</p>`; 
+                setTimeout(() => { isProcessingSholat = false; }, 1500);
+                return; 
+            }
+
+            const today = getLocalDateString();
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+            const jenisSholat = document.getElementById('selectJenisSholatScan').value;
+            const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
+
+            let existing = state.sholatLogs.find(a => a.student_id === student.id && a.tanggal === today && a.jenis_sholat === jenisSholat);
+            if (existing) {
+                 showToast(`Sudah scan ${jenisSholat}: ${student.nama}`, 'info');
+                 setTimeout(() => { isProcessingSholat = false; }, 1500);
+                 return;
+            }
+
+            const newRecord = {
+                id: String(Date.now()), student_id: student.id, nis: student.nis, nama: student.nama,
+                kelas: kelasLengkap, jenis_sholat: jenisSholat, tanggal: today, jam_scan: timeString, status: 'Sudah Sholat'
+            };
+            state.sholatLogs.push(newRecord);
             showToast(`Sholat Tercatat: ${student.nama}`, 'success');
+
+            box.innerHTML = `
+                <div class="text-teal-500 mb-2"><i class="fa-solid fa-mosque text-6xl drop-shadow-md"></i></div>
+                <h4 class="font-bold text-slate-800 text-lg">${student.nama}</h4>
+                <p class="text-xs text-slate-500 font-mono">${student.nis} • ${kelasLengkap}</p>
+                <div class="mt-4 inline-block px-3 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-bold uppercase tracking-wider">${jenisSholat} • ${timeString}</div>
+            `;
+
+            if (supabaseClient) {
+                try {
+                    await supabaseClient.from('sholat_logs').insert([newRecord]);
+                } catch(err) {
+                    console.error("Gagal simpan sholat ke database:", err);
+                }
+            }
+
+            // Buka kembali kunci scan setelah 1.5 detik
+            setTimeout(() => { isProcessingSholat = false; }, 1500);
         }
 
         function triggerImportExcel() { document.getElementById('excelFileInput').click(); }
@@ -1281,11 +1429,11 @@
                             id: String(Date.now() + Math.random()),
                             nis: String(row.NIS),
                             nama: row.Nama,
-                            sekolah: 'MAM 1',
+                            sekolah: row.Sekolah || 'MAM 1',
                             kelas: row.Kelas || 'X',
                             jurusan: row.Jurusan || 'Reguler',
                             rombel: String(row.Rombel || '1'),
-                            asrama: Boolean(row.Asrama),
+                            asrama: row.Asrama === 'Ya' || row.Asrama === true,
                             status: 'Aktif',
                             qr_code_key: `MAM1-${row.NIS}-${String(row.Nama).toUpperCase().replace(/\s+/g, '')}`
                         };
@@ -1331,15 +1479,102 @@
             });
         }
 
-        function renderRekapPresensi() {}
-        function renderRekapSholat() {}
+        function renderRekapPresensi() {
+            const dateStr = document.getElementById('rekapPresensiDate').value;
+            const filterKelas = document.getElementById('rekapPresensiKelas').value;
+            const tbody = document.getElementById('tableRekapPresensiBody');
+            if (!dateStr) return;
+
+            let targetStudents = state.students.filter(s => s.status === 'Aktif');
+            if (filterKelas !== 'Semua') targetStudents = targetStudents.filter(s => `${s.kelas} ${s.jurusan} ${s.rombel || '1'}` === filterKelas);
+
+            let html = '';
+            let countTepat = 0, countTelat = 0, countBelum = 0;
+
+            targetStudents.forEach(s => {
+                const att = state.attendance.find(a => a.student_id === s.id && a.tanggal === dateStr);
+                let rowStatus = 'Belum Scan'; let rowClass = 'text-rose-600 bg-rose-50';
+                let jamMasuk = '-'; let jamPulang = '-';
+
+                if (att) {
+                    jamMasuk = att.jam_masuk || '-'; jamPulang = att.jam_pulang || '-';
+                    if (att.status.includes('Tepat')) { rowStatus = 'Tepat Waktu'; rowClass = 'text-emerald-600 bg-emerald-50'; countTepat++; } 
+                    else if (att.status.includes('Telat') || att.status.includes('Terlambat')) { rowStatus = 'Terlambat'; rowClass = 'text-amber-600 bg-amber-50'; countTelat++; } 
+                    else { rowStatus = att.status; rowClass = 'text-slate-600 bg-slate-50'; countTepat++; }
+                } else {
+                    countBelum++;
+                }
+
+                html += `<tr class="hover:bg-slate-50 transition border-b border-slate-50">
+                    <td class="p-3.5 font-mono text-slate-500">${s.nis}</td>
+                    <td class="p-3.5 font-bold text-slate-800">${s.nama}</td>
+                    <td class="p-3.5 text-slate-600 font-medium">${s.kelas} ${s.jurusan} ${s.rombel || '1'}</td>
+                    <td class="p-3.5 font-semibold text-slate-700">${jamMasuk}</td>
+                    <td class="p-3.5 font-semibold text-slate-700">${jamPulang}</td>
+                    <td class="p-3.5 text-center"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${rowClass}">${rowStatus}</span></td>
+                </tr>`;
+            });
+
+            if (targetStudents.length === 0) html = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Tidak ada data siswa untuk kelas ini.</td></tr>`;
+            
+            tbody.innerHTML = html;
+            document.getElementById('statTepatWaktu').innerText = countTepat;
+            document.getElementById('statTerlambat').innerText = countTelat;
+            document.getElementById('statBelumScan').innerText = countBelum;
+        }
+
+        function renderRekapSholat() {
+            const dateStr = document.getElementById('rekapSholatDate').value;
+            const filterKelas = document.getElementById('rekapSholatKelas').value;
+            const jenisSholat = document.getElementById('rekapSholatJenis').value;
+            const tbody = document.getElementById('tableRekapSholatBody');
+            if (!dateStr) return;
+
+            let targetStudents = state.students.filter(s => s.status === 'Aktif');
+            if (filterKelas !== 'Semua') targetStudents = targetStudents.filter(s => `${s.kelas} ${s.jurusan} ${s.rombel || '1'}` === filterKelas);
+
+            let html = '';
+            targetStudents.forEach(s => {
+                const log = state.sholatLogs.find(a => a.student_id === s.id && a.tanggal === dateStr && a.jenis_sholat === jenisSholat);
+                let rowStatus = 'Belum Scan'; let rowClass = 'text-rose-600 bg-rose-50'; let jamScan = '-';
+
+                if (log) { jamScan = log.jam_scan || '-'; rowStatus = 'Sudah Sholat'; rowClass = 'text-teal-600 bg-teal-50'; }
+
+                html += `<tr class="hover:bg-slate-50 transition border-b border-slate-50">
+                    <td class="p-3.5 font-mono text-slate-500">${s.nis}</td>
+                    <td class="p-3.5 font-bold text-slate-800">${s.nama}</td>
+                    <td class="p-3.5 text-slate-600 font-medium">${s.kelas} ${s.jurusan} ${s.rombel || '1'}</td>
+                    <td class="p-3.5 font-semibold text-slate-700">${jamScan}</td>
+                    <td class="p-3.5 text-center"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase ${rowClass}">${rowStatus}</span></td>
+                </tr>`;
+            });
+
+            if (targetStudents.length === 0) html = `<tr><td colspan="5" class="p-8 text-center text-slate-400">Tidak ada data siswa untuk kelas ini.</td></tr>`;
+            tbody.innerHTML = html;
+        }
+
+        function exportRekapPresensiExcel() {
+            const table = document.querySelector("#tab-rekapPresensi table");
+            if(table) {
+                const wb = XLSX.utils.table_to_book(table);
+                XLSX.writeFile(wb, "Rekap_Presensi.xlsx");
+            }
+        }
+
+        function exportRekapSholatExcel() {
+            const table = document.querySelector("#tab-rekapSholat table");
+            if(table) {
+                const wb = XLSX.utils.table_to_book(table);
+                XLSX.writeFile(wb, "Rekap_Sholat.xlsx");
+            }
+        }
+
         function renderGuruTable() {
             document.getElementById('tableGuruBody').innerHTML = state.gurus.map(g => `
                 <tr><td class="p-3">${g.nama}</td><td class="p-3">${g.email}</td><td class="p-3 text-center">${g.role}</td><td class="p-3 text-center">-</td></tr>
             `).join('');
         }
 
-        /* FITUR BARU: MASTER KELAS */
         function renderMasterKelas() {
             const tbody = document.getElementById('tableMasterKelasBody');
             if(!tbody) return;
