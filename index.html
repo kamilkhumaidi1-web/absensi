@@ -824,7 +824,7 @@
             console.warn("Supabase tidak terhubung:", err);
         }
 
-        // Fungsi untuk mendapatkan tanggal lokal (WIB/Indonesia) menghindari bug zona waktu UTC
+        // Fungsi untuk mendapatkan tanggal lokal (WIB/Indonesia)
         function getLocalDateString() {
             const now = new Date();
             const year = now.getFullYear();
@@ -838,13 +838,7 @@
             currentKelasActionTab: 'naik',
             currentStatusFilterSiswa: 'Aktif',
             selectedKelasSiswaIds: [],
-            students: [
-                { id: '1', nis: '1001', nama: 'Ahmad Fauzi', sekolah: 'MAM 1', kelas: 'X', jurusan: 'Reguler', rombel: '1', asrama: true, status: 'Aktif', qr_code_key: 'MAM1-1001-FAUZI' },
-                { id: '2', nis: '1002', nama: 'Siti Nurhaliza', sekolah: 'MAM 1', kelas: 'X', jurusan: 'ATCP', rombel: '1', asrama: false, status: 'Aktif', qr_code_key: 'MAM1-1002-SITI' },
-                { id: '3', nis: '1003', nama: 'Budi Santoso', sekolah: 'MAM 1', kelas: 'X', jurusan: 'ITCP', rombel: '1', asrama: true, status: 'Aktif', qr_code_key: 'MAM1-1003-BUDI' },
-                { id: '4', nis: '1004', nama: 'Dewi Lestari', sekolah: 'MAM 1', kelas: 'XI', jurusan: 'M-ICO', rombel: '1', asrama: false, status: 'Aktif', qr_code_key: 'MAM1-1004-DEWI' },
-                { id: '5', nis: '1005', nama: 'Eko Prasetyo', sekolah: 'MAM 1', kelas: 'XII', jurusan: 'Reguler', rombel: '1', asrama: true, status: 'Aktif', qr_code_key: 'MAM1-1005-EKO' }
-            ],
+            students: [],
             gurus: [
                 { id: 'g1', nama: 'Ustadz Abdullah', email: 'guru@sekolah.sch.id', role: 'GURU' }
             ],
@@ -853,12 +847,8 @@
                 'XI Reguler 1', 'XI ATCP 1', 'XI ITCP 1', 'XI M-ICO 1',
                 'XII Reguler 1', 'XII ATCP 1', 'XII ITCP 1', 'XII M-ICO 1'
             ],
-            attendance: [
-                { id: 'a1', student_id: '1', nis: '1001', nama: 'Ahmad Fauzi', kelas: 'X Reguler 1', tanggal: getLocalDateString(), jam_masuk: '06:50', jam_pulang: '-', status: 'Tepat Waktu' }
-            ],
-            sholatLogs: [
-                { id: 's1', student_id: '1', nis: '1001', nama: 'Ahmad Fauzi', kelas: 'X Reguler 1', jenis_sholat: 'Sholat Dzuhur', tanggal: getLocalDateString(), jam_scan: '12:15', status: 'Sudah Sholat' }
-            ],
+            attendance: [],
+            sholatLogs: [],
             settings: {
                 masuk_tepat: '07:00',
                 masuk_telat: '08:00',
@@ -885,7 +875,7 @@
 
             try {
                 const { data: studentsData, error: errStudents } = await supabaseClient.from('students').select('*');
-                if (!errStudents && studentsData && studentsData.length > 0) {
+                if (!errStudents && studentsData) {
                     state.students = studentsData;
                 }
 
@@ -1182,6 +1172,7 @@
             const payload = { nis, nama, sekolah, kelas, jurusan, rombel, status, asrama, qr_code_key };
 
             if (id) {
+                // EDIT DATA SISWA
                 if (supabaseClient) {
                     const { error } = await supabaseClient.from('students').update(payload).eq('id', id);
                     if (error) { showToast('Gagal update database: ' + error.message, 'error'); return; }
@@ -1190,21 +1181,23 @@
                 if (index !== -1) state.students[index] = { ...state.students[index], ...payload };
                 showToast('Data siswa berhasil diperbarui!', 'success');
             } else {
-                let newSiswa = { ...payload };
+                // TAMBAH DATA SISWA BARU (Tanpa memaksa ID buatan sendiri)
                 if (supabaseClient) {
                     const { data, error } = await supabaseClient.from('students').insert([payload]).select().single();
                     if (error) { 
                         showToast('Gagal simpan ke database Supabase: ' + error.message, 'error'); 
-                        return; 
+                        return; // Hentikan proses jika gagal
                     }
                     if (data) {
-                        newSiswa = data;
+                        state.students.unshift(data); // Simpan ID resmi dari Supabase ke lokal
+                        showToast('Siswa baru berhasil ditambahkan ke Database!', 'success');
                     }
                 } else {
-                    newSiswa.id = String(Date.now());
+                    // Mode lokal murni jika tidak terhubung database
+                    payload.id = String(Date.now());
+                    state.students.unshift(payload);
+                    showToast('Siswa baru disimpan (Mode Lokal)!', 'success');
                 }
-                state.students.unshift(newSiswa);
-                showToast('Siswa baru berhasil ditambahkan!', 'success');
             }
 
             closeModalSiswa();
@@ -1242,6 +1235,7 @@
                     const { error } = await supabaseClient.from('students').delete().eq('id', idSiswaToDelete);
                     if (error) {
                         showToast('Gagal menghapus dari database: ' + error.message, 'error');
+                        closeDeleteModal();
                         return;
                     }
                 }
@@ -1287,10 +1281,13 @@
                 return; 
             }
             
-            // Ambil waktu saat ini (Lokal)
             const today = getLocalDateString();
             const now = new Date();
-            const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:)
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}`;
             
             // Tentukan status Masuk / Pulang dan Tepat/Telat
             const batasTepat = state.settings.masuk_tepat || '07:00';
@@ -1387,7 +1384,12 @@
 
             const today = getLocalDateString();
             const now = new Date();
-            const timeString = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false });
+            
+            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:)
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}`;
+
             const jenisSholat = document.getElementById('selectJenisSholatScan').value;
             const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
 
