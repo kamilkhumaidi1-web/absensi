@@ -1305,7 +1305,8 @@
             let existing = state.attendance.find(a => a.student_id === student.id && a.tanggal === today);
 
             if (existing) {
-                if (isPulang && existing.jam_pulang === '-') {
+                // PERBAIKAN: Cek null atau strip karena data dari Supabase akan bernilai null
+                if (isPulang && (existing.jam_pulang === '-' || existing.jam_pulang === null)) {
                     // Update jam pulang ke Supabase
                     if (supabaseClient) {
                         const { error } = await supabaseClient.from('attendance').update({ jam_pulang: timeString }).eq('id', existing.id);
@@ -1326,14 +1327,15 @@
                 if (isPulang) status = 'Tanpa Keterangan Masuk';
                 
                 // Siapkan data TANPA ID buatan manual agar Supabase tidak menolak
+                // PERBAIKAN: Gunakan null, bukan '-', agar Supabase tidak menolak tipe waktu
                 const payloadToSave = {
                     student_id: student.id,
                     nis: student.nis,
                     nama: student.nama,
                     kelas: kelasLengkap,
                     tanggal: today,
-                    jam_masuk: isPulang ? '-' : timeString,
-                    jam_pulang: isPulang ? timeString : '-',
+                    jam_masuk: isPulang ? null : timeString,
+                    jam_pulang: isPulang ? timeString : null,
                     status: status
                 };
 
