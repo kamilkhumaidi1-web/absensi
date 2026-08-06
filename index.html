@@ -1284,10 +1284,10 @@
             const today = getLocalDateString();
             const now = new Date();
             
-            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:)
+            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:) dan Detik untuk Supabase
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}`;
+            const timeString = `${hours}:${minutes}:00`;
             
             // Tentukan status Masuk / Pulang dan Tepat/Telat
             const batasTepat = state.settings.masuk_tepat || '07:00';
@@ -1326,18 +1326,22 @@
             } else {
                 if (isPulang) status = 'Tanpa Keterangan Masuk';
                 
-                // Siapkan data TANPA ID buatan manual agar Supabase tidak menolak
-                // PERBAIKAN: Gunakan null, bukan '-', agar Supabase tidak menolak tipe waktu
+                // Siapkan data TANPA menyertakan kolom yang kosong untuk menghindari penolakan Supabase
                 const payloadToSave = {
                     student_id: student.id,
                     nis: student.nis,
                     nama: student.nama,
                     kelas: kelasLengkap,
                     tanggal: today,
-                    jam_masuk: isPulang ? null : timeString,
-                    jam_pulang: isPulang ? timeString : null,
                     status: status
                 };
+
+                // Hanya kirim kolom waktu yang memang ada isinya
+                if (isPulang) {
+                    payloadToSave.jam_pulang = timeString;
+                } else {
+                    payloadToSave.jam_masuk = timeString;
+                }
 
                 if (supabaseClient) {
                     const { data, error } = await supabaseClient.from('attendance').insert([payloadToSave]).select().single();
@@ -1387,10 +1391,10 @@
             const today = getLocalDateString();
             const now = new Date();
             
-            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:)
+            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:) dan Detik
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}`;
+            const timeString = `${hours}:${minutes}:00`;
 
             const jenisSholat = document.getElementById('selectJenisSholatScan').value;
             const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
