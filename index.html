@@ -458,9 +458,14 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="exportRekapPresensiExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="loadDataFromSupabase(true)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-rotate"></i> Refresh Data
+                        </button>
+                        <button onclick="exportRekapPresensiExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -531,9 +536,14 @@
                             </select>
                         </div>
                     </div>
-                    <button onclick="exportRekapSholatExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition flex items-center gap-2">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="loadDataFromSupabase(true)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-rotate"></i> Refresh Data
+                        </button>
+                        <button onclick="exportRekapSholatExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-xl transition flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-file-excel"></i> Export Excel
+                        </button>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
@@ -824,7 +834,6 @@
             console.warn("Supabase tidak terhubung:", err);
         }
 
-        // Fungsi untuk mendapatkan tanggal lokal (WIB/Indonesia)
         function getLocalDateString() {
             const now = new Date();
             const year = now.getFullYear();
@@ -892,6 +901,8 @@
 
                 renderSiswaTable();
                 renderSiswaKelasList();
+                renderRekapPresensi();
+                renderRekapSholat();
             } catch (err) {
                 console.warn(err);
                 if (dot) dot.className = 'w-2 h-2 rounded-full bg-rose-500';
@@ -959,13 +970,17 @@
             showToast('Berhasil keluar dari sistem.');
         }
 
-        function switchTab(tabName) {
+        async function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('bg-slate-800', 'text-white');
                 if (btn.getAttribute('data-tab') === tabName) btn.classList.add('bg-slate-800', 'text-white');
             });
             document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            if (tabName === 'rekapPresensi' || tabName === 'rekapSholat') {
+                await loadDataFromSupabase(false);
+            }
 
             if (tabName === 'manajemenKelas') renderSiswaKelasList();
             if (tabName === 'masterKelas') renderMasterKelas();
@@ -1073,7 +1088,7 @@
             }
 
             for (let id of state.selectedKelasSiswaIds) {
-                const siswa = state.students.find(s => s.id === id);
+                const siswa = state.students.find(s => s.id == id);
                 if (!siswa) continue;
                 if (actionType === 'naik') {
                     const parts = kelasTujuan.split(' ');
@@ -1172,28 +1187,25 @@
             const payload = { nis, nama, sekolah, kelas, jurusan, rombel, status, asrama, qr_code_key };
 
             if (id) {
-                // EDIT DATA SISWA
                 if (supabaseClient) {
                     const { error } = await supabaseClient.from('students').update(payload).eq('id', id);
                     if (error) { showToast('Gagal update database: ' + error.message, 'error'); return; }
                 }
-                const index = state.students.findIndex(s => s.id === id);
+                const index = state.students.findIndex(s => s.id == id);
                 if (index !== -1) state.students[index] = { ...state.students[index], ...payload };
                 showToast('Data siswa berhasil diperbarui!', 'success');
             } else {
-                // TAMBAH DATA SISWA BARU (Tanpa memaksa ID buatan sendiri)
                 if (supabaseClient) {
                     const { data, error } = await supabaseClient.from('students').insert([payload]).select().single();
                     if (error) { 
                         showToast('Gagal simpan ke database Supabase: ' + error.message, 'error'); 
-                        return; // Hentikan proses jika gagal
+                        return; 
                     }
                     if (data) {
-                        state.students.unshift(data); // Simpan ID resmi dari Supabase ke lokal
+                        state.students.unshift(data);
                         showToast('Siswa baru berhasil ditambahkan ke Database!', 'success');
                     }
                 } else {
-                    // Mode lokal murni jika tidak terhubung database
                     payload.id = String(Date.now());
                     state.students.unshift(payload);
                     showToast('Siswa baru disimpan (Mode Lokal)!', 'success');
@@ -1205,7 +1217,7 @@
         }
 
         function editSiswa(id) {
-            const s = state.students.find(item => item.id === id);
+            const s = state.students.find(item => item.id == id);
             if (!s) return;
             document.getElementById('siswaId').value = s.id;
             document.getElementById('siswaNis').value = s.nis;
@@ -1239,7 +1251,7 @@
                         return;
                     }
                 }
-                state.students = state.students.filter(s => s.id !== idSiswaToDelete);
+                state.students = state.students.filter(s => s.id != idSiswaToDelete);
                 showToast('Data siswa berhasil dihapus!', 'success');
                 renderSiswaTable();
                 closeDeleteModal();
@@ -1269,10 +1281,9 @@
         }
 
         async function onScanPresensiSuccess(decodedText) {
-            // Mencegah scan beruntun menumpuk (Cooldown 1.5 detik)
             if (isProcessingPresensi) return;
             isProcessingPresensi = true;
-
+            
             const student = state.students.find(s => s.qr_code_key === decodedText || s.nis === decodedText);
             const box = document.getElementById('scanPresensiResult');
             if (!student) { 
@@ -1283,50 +1294,48 @@
             
             const today = getLocalDateString();
             const now = new Date();
-            
-            // FORMAT WAKTU STANDAR DATABASE SUPABASE (HH:MM:SS) - ANTI GAGAL
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
             const timeString = `${hours}:${minutes}:${seconds}`;
             
-            // Tentukan status Masuk / Pulang dan Tepat/Telat
+            const timeCompare = `${hours}:${minutes}`;
             const batasTepat = state.settings.masuk_tepat || '07:00';
             const batasTelat = state.settings.masuk_telat || '08:00';
             const jamPulangSetting = state.settings.pulang || '15:00';
             
-            let isPulang = timeString >= jamPulangSetting;
+            let isPulang = timeCompare >= jamPulangSetting;
             let status = 'Tepat Waktu';
             if (!isPulang) {
-                if (timeString > batasTepat && timeString <= batasTelat) status = 'Terlambat';
-                else if (timeString > batasTelat) status = 'Sangat Terlambat';
+                if (timeCompare > batasTepat && timeCompare <= batasTelat) status = 'Terlambat';
+                else if (timeCompare > batasTelat) status = 'Sangat Terlambat';
             }
 
             const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
-            let existing = state.attendance.find(a => a.student_id === student.id && a.tanggal === today);
+            let existing = state.attendance.find(a => a.student_id == student.id && a.tanggal === today);
 
             if (existing) {
-                // UPDATE JAM PULANG
-                if (isPulang && (existing.jam_pulang === '-' || existing.jam_pulang === null || existing.jam_pulang === '')) {
+                if (isPulang && (!existing.jam_pulang || existing.jam_pulang === '-')) {
                     if (supabaseClient) {
-                        const { error } = await supabaseClient.from('attendance').update({ jam_pulang: timeString }).eq('id', existing.id);
+                        const payloadUpdate = { jam_pulang: timeString, status: status };
+                        const { error } = await supabaseClient.from('attendance').update(payloadUpdate).eq('id', existing.id);
                         if (error) {
-                            showToast('Gagal update Supabase: ' + error.message, 'error');
+                            showToast('Gagal update ke Supabase: ' + error.message, 'error');
                             setTimeout(() => { isProcessingPresensi = false; }, 1500);
                             return;
                         }
                     }
                     existing.jam_pulang = timeString;
+                    existing.status = status;
                     showToast(`Presensi Pulang: ${student.nama}`, 'success');
                 } else {
                     showToast(`Siswa ini sudah absen hari ini.`, 'info');
                     setTimeout(() => { isProcessingPresensi = false; }, 1500);
-                    return; // Mencegah scan ganda
+                    return; 
                 }
             } else {
                 if (isPulang) status = 'Tanpa Keterangan Masuk';
                 
-                // STRATEGI BARU: Hanya masukkan data utama saja ke Payload
                 const payloadToSave = {
                     student_id: student.id,
                     nis: student.nis,
@@ -1336,8 +1345,6 @@
                     status: status
                 };
 
-                // Cek secara dinamis: jika Masuk, kirim jam_masuk saja. Jika pulang, kirim jam_pulang saja.
-                // Ini akan menghindari pengiriman nilai _, -, atau null yang membuat database marah.
                 if (isPulang) {
                     payloadToSave.jam_pulang = timeString;
                 } else {
@@ -1351,7 +1358,7 @@
                         setTimeout(() => { isProcessingPresensi = false; }, 1500);
                         return;
                     }
-                    state.attendance.push(data);
+                    if (data) state.attendance.push(data);
                 } else {
                     payloadToSave.id = String(Date.now());
                     state.attendance.push(payloadToSave);
@@ -1371,7 +1378,6 @@
         }
 
         async function onScanSholatSuccess(decodedText) {
-            // Mencegah scan beruntun menumpuk (Cooldown 1.5 detik)
             if (isProcessingSholat) return;
             isProcessingSholat = true;
 
@@ -1385,17 +1391,15 @@
 
             const today = getLocalDateString();
             const now = new Date();
-            
-            // FORMAT WAKTU STANDAR DATABASE SUPABASE (HH:MM:SS) - ANTI GAGAL
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
             const timeString = `${hours}:${minutes}:${seconds}`;
-
+            
             const jenisSholat = document.getElementById('selectJenisSholatScan').value;
             const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
 
-            let existing = state.sholatLogs.find(a => a.student_id === student.id && a.tanggal === today && a.jenis_sholat === jenisSholat);
+            let existing = state.sholatLogs.find(a => a.student_id == student.id && a.tanggal === today && a.jenis_sholat === jenisSholat);
             if (existing) {
                  showToast(`Sudah scan ${jenisSholat}: ${student.nama}`, 'info');
                  setTimeout(() => { isProcessingSholat = false; }, 1500);
@@ -1409,7 +1413,7 @@
                 kelas: kelasLengkap, 
                 jenis_sholat: jenisSholat, 
                 tanggal: today, 
-                jam_scan: timeString, 
+                jam_scan: timeString,
                 status: 'Sudah Sholat'
             };
 
@@ -1420,7 +1424,7 @@
                     setTimeout(() => { isProcessingSholat = false; }, 1500);
                     return;
                 }
-                state.sholatLogs.push(data);
+                if (data) state.sholatLogs.push(data);
             } else {
                 payloadToSave.id = String(Date.now());
                 state.sholatLogs.push(payloadToSave);
@@ -1517,7 +1521,7 @@
             let countTepat = 0, countTelat = 0, countBelum = 0;
 
             targetStudents.forEach(s => {
-                const att = state.attendance.find(a => a.student_id === s.id && a.tanggal === dateStr);
+                const att = state.attendance.find(a => String(a.student_id) === String(s.id) && a.tanggal === dateStr);
                 let rowStatus = 'Belum Scan'; let rowClass = 'text-rose-600 bg-rose-50';
                 let jamMasuk = '-'; let jamPulang = '-';
 
@@ -1560,7 +1564,7 @@
 
             let html = '';
             targetStudents.forEach(s => {
-                const log = state.sholatLogs.find(a => a.student_id === s.id && a.tanggal === dateStr && a.jenis_sholat === jenisSholat);
+                const log = state.sholatLogs.find(a => String(a.student_id) === String(s.id) && a.tanggal === dateStr && a.jenis_sholat === jenisSholat);
                 let rowStatus = 'Belum Scan'; let rowClass = 'text-rose-600 bg-rose-50'; let jamScan = '-';
 
                 if (log) { jamScan = log.jam_scan || '-'; rowStatus = 'Sudah Sholat'; rowClass = 'text-teal-600 bg-teal-50'; }
