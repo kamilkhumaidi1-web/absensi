@@ -1284,10 +1284,11 @@
             const today = getLocalDateString();
             const now = new Date();
             
-            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:) dan Detik untuk Supabase
+            // FORMAT WAKTU STANDAR DATABASE SUPABASE (HH:MM:SS) - ANTI GAGAL
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:00`;
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
             
             // Tentukan status Masuk / Pulang dan Tepat/Telat
             const batasTepat = state.settings.masuk_tepat || '07:00';
@@ -1305,9 +1306,8 @@
             let existing = state.attendance.find(a => a.student_id === student.id && a.tanggal === today);
 
             if (existing) {
-                // PERBAIKAN: Cek null atau strip karena data dari Supabase akan bernilai null
-                if (isPulang && (existing.jam_pulang === '-' || existing.jam_pulang === null)) {
-                    // Update jam pulang ke Supabase
+                // UPDATE JAM PULANG
+                if (isPulang && (existing.jam_pulang === '-' || existing.jam_pulang === null || existing.jam_pulang === '')) {
                     if (supabaseClient) {
                         const { error } = await supabaseClient.from('attendance').update({ jam_pulang: timeString }).eq('id', existing.id);
                         if (error) {
@@ -1326,7 +1326,7 @@
             } else {
                 if (isPulang) status = 'Tanpa Keterangan Masuk';
                 
-                // Siapkan data TANPA menyertakan kolom yang kosong untuk menghindari penolakan Supabase
+                // STRATEGI BARU: Hanya masukkan data utama saja ke Payload
                 const payloadToSave = {
                     student_id: student.id,
                     nis: student.nis,
@@ -1336,7 +1336,8 @@
                     status: status
                 };
 
-                // Hanya kirim kolom waktu yang memang ada isinya
+                // Cek secara dinamis: jika Masuk, kirim jam_masuk saja. Jika pulang, kirim jam_pulang saja.
+                // Ini akan menghindari pengiriman nilai _, -, atau null yang membuat database marah.
                 if (isPulang) {
                     payloadToSave.jam_pulang = timeString;
                 } else {
@@ -1350,17 +1351,14 @@
                         setTimeout(() => { isProcessingPresensi = false; }, 1500);
                         return;
                     }
-                    // Masukkan data balasan (yang sudah punya ID resmi Supabase) ke memori lokal
                     state.attendance.push(data);
                 } else {
-                    // Hanya gunakan ID manual jika sedang mode Offline/Lokal
                     payloadToSave.id = String(Date.now());
                     state.attendance.push(payloadToSave);
                 }
                 showToast(`Presensi Masuk: ${student.nama}`, 'success');
             }
 
-            // Tampilkan visual di kotak Scanner
             box.innerHTML = `
                 <div class="text-emerald-500 mb-2"><i class="fa-solid fa-circle-check text-6xl drop-shadow-md"></i></div>
                 <h4 class="font-bold text-slate-800 text-lg">${student.nama}</h4>
@@ -1368,10 +1366,7 @@
                 <div class="mt-4 inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider">${isPulang ? 'PULANG' : status} • ${timeString}</div>
             `;
 
-            // Refresh tabel rekap secara otomatis
             renderRekapPresensi();
-
-            // Buka kembali kunci scan setelah 1.5 detik
             setTimeout(() => { isProcessingPresensi = false; }, 1500);
         }
 
@@ -1391,10 +1386,11 @@
             const today = getLocalDateString();
             const now = new Date();
             
-            // PERBAIKAN: Format Jam Manual agar selalu menggunakan Titik Dua (:) dan Detik
+            // FORMAT WAKTU STANDAR DATABASE SUPABASE (HH:MM:SS) - ANTI GAGAL
             const hours = String(now.getHours()).padStart(2, '0');
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:00`;
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
 
             const jenisSholat = document.getElementById('selectJenisSholatScan').value;
             const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
@@ -1406,7 +1402,6 @@
                  return;
             }
 
-            // Data untuk disave tanpa ID paksaan
             const payloadToSave = {
                 student_id: student.id, 
                 nis: student.nis, 
@@ -1439,10 +1434,7 @@
                 <div class="mt-4 inline-block px-3 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-bold uppercase tracking-wider">${jenisSholat} • ${timeString}</div>
             `;
 
-            // Refresh tabel rekap secara otomatis
             renderRekapSholat();
-
-            // Buka kembali kunci scan setelah 1.5 detik
             setTimeout(() => { isProcessingSholat = false; }, 1500);
         }
 
