@@ -1306,22 +1306,30 @@
 
             const kelasLengkap = `${student.kelas} ${student.jurusan} ${student.rombel || '1'}`;
             let existing = state.attendance.find(a => a.student_id === student.id && a.tanggal === today);
-            let payload = {};
 
             if (existing) {
                 if (isPulang && existing.jam_pulang === '-') {
+                    // Update jam pulang ke Supabase
+                    if (supabaseClient) {
+                        const { error } = await supabaseClient.from('attendance').update({ jam_pulang: timeString }).eq('id', existing.id);
+                        if (error) {
+                            showToast('Gagal update Supabase: ' + error.message, 'error');
+                            setTimeout(() => { isProcessingPresensi = false; }, 1500);
+                            return;
+                        }
+                    }
                     existing.jam_pulang = timeString;
-                    payload = { jam_pulang: timeString };
                     showToast(`Presensi Pulang: ${student.nama}`, 'success');
                 } else {
                     showToast(`Siswa ini sudah absen hari ini.`, 'info');
                     setTimeout(() => { isProcessingPresensi = false; }, 1500);
-                    return; // Mencegah scan ganda berkali-kali
+                    return; // Mencegah scan ganda
                 }
             } else {
                 if (isPulang) status = 'Tanpa Keterangan Masuk';
-                const newRecord = {
-                    id: String(Date.now()),
+                
+                // Siapkan data TANPA ID buatan manual agar Supabase tidak menolak
+                const payloadToSave = {
                     student_id: student.id,
                     nis: student.nis,
                     nama: student.nama,
@@ -1331,8 +1339,21 @@
                     jam_pulang: isPulang ? timeString : '-',
                     status: status
                 };
-                state.attendance.push(newRecord);
-                payload = newRecord;
+
+                if (supabaseClient) {
+                    const { data, error } = await supabaseClient.from('attendance').insert([payloadToSave]).select().single();
+                    if (error) {
+                        showToast('Gagal simpan ke Supabase: ' + error.message, 'error');
+                        setTimeout(() => { isProcessingPresensi = false; }, 1500);
+                        return;
+                    }
+                    // Masukkan data balasan (yang sudah punya ID resmi Supabase) ke memori lokal
+                    state.attendance.push(data);
+                } else {
+                    // Hanya gunakan ID manual jika sedang mode Offline/Lokal
+                    payloadToSave.id = String(Date.now());
+                    state.attendance.push(payloadToSave);
+                }
                 showToast(`Presensi Masuk: ${student.nama}`, 'success');
             }
 
@@ -1344,18 +1365,8 @@
                 <div class="mt-4 inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-wider">${isPulang ? 'PULANG' : status} • ${timeString}</div>
             `;
 
-            // Simpan ke Supabase (Jika Online)
-            if (supabaseClient) {
-                try {
-                    if (existing && isPulang) {
-                        await supabaseClient.from('attendance').update(payload).eq('id', existing.id);
-                    } else if (!existing) {
-                        await supabaseClient.from('attendance').insert([payload]);
-                    }
-                } catch(err) {
-                    console.error("Gagal simpan ke database:", err);
-                }
-            }
+            // Refresh tabel rekap secara otomatis
+            renderRekapPresensi();
 
             // Buka kembali kunci scan setelah 1.5 detik
             setTimeout(() => { isProcessingPresensi = false; }, 1500);
@@ -1387,11 +1398,30 @@
                  return;
             }
 
-            const newRecord = {
-                id: String(Date.now()), student_id: student.id, nis: student.nis, nama: student.nama,
-                kelas: kelasLengkap, jenis_sholat: jenisSholat, tanggal: today, jam_scan: timeString, status: 'Sudah Sholat'
+            // Data untuk disave tanpa ID paksaan
+            const payloadToSave = {
+                student_id: student.id, 
+                nis: student.nis, 
+                nama: student.nama,
+                kelas: kelasLengkap, 
+                jenis_sholat: jenisSholat, 
+                tanggal: today, 
+                jam_scan: timeString, 
+                status: 'Sudah Sholat'
             };
-            state.sholatLogs.push(newRecord);
+
+            if (supabaseClient) {
+                const { data, error } = await supabaseClient.from('sholat_logs').insert([payloadToSave]).select().single();
+                if (error) {
+                    showToast('Gagal simpan sholat ke Supabase: ' + error.message, 'error');
+                    setTimeout(() => { isProcessingSholat = false; }, 1500);
+                    return;
+                }
+                state.sholatLogs.push(data);
+            } else {
+                payloadToSave.id = String(Date.now());
+                state.sholatLogs.push(payloadToSave);
+            }
             showToast(`Sholat Tercatat: ${student.nama}`, 'success');
 
             box.innerHTML = `
@@ -1401,13 +1431,8 @@
                 <div class="mt-4 inline-block px-3 py-1 rounded-full bg-teal-100 text-teal-700 text-xs font-bold uppercase tracking-wider">${jenisSholat} • ${timeString}</div>
             `;
 
-            if (supabaseClient) {
-                try {
-                    await supabaseClient.from('sholat_logs').insert([newRecord]);
-                } catch(err) {
-                    console.error("Gagal simpan sholat ke database:", err);
-                }
-            }
+            // Refresh tabel rekap secara otomatis
+            renderRekapSholat();
 
             // Buka kembali kunci scan setelah 1.5 detik
             setTimeout(() => { isProcessingSholat = false; }, 1500);
