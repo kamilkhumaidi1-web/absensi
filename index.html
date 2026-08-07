@@ -75,6 +75,11 @@
                 display: none !important;
             }
         }
+
+        /* Sidebar collapse transition utility */
+        .sidebar-transition {
+            transition: width 0.3s ease, transform 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
@@ -117,102 +122,106 @@
     <div id="appContainer" class="hidden min-h-screen flex flex-col md:flex-row">
 
         <!-- Sidebar Navigation -->
-        <aside id="sidebar" class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col justify-between transition-all duration-300 z-30">
+        <aside id="sidebar" class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col justify-between sidebar-transition z-30">
             <div>
                 <div class="p-5 border-b border-slate-800 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-brand-600 text-white rounded-xl flex items-center justify-center text-lg font-bold">
+                    <div class="flex items-center gap-3 overflow-hidden" id="sidebarBrandContainer">
+                        <div class="w-10 h-10 bg-brand-600 text-white rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0">
                             <i class="fa-solid fa-qrcode"></i>
                         </div>
-                        <div>
+                        <div class="sidebar-text truncate">
                             <h2 class="font-bold text-white text-base leading-tight">Presensi QR</h2>
                             <p class="text-xs text-slate-400">MAM 1 System</p>
                         </div>
                     </div>
+                    <!-- Minimize Button -->
+                    <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white p-2 rounded-xl transition hover:bg-slate-800" title="Minimize Sidebar">
+                        <i id="sidebarToggleIcon" class="fa-solid fa-angles-left"></i>
+                    </button>
                 </div>
 
-                <nav class="p-3 space-y-1">
-                    <p class="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase">Menu Utama</p>
+                <nav class="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-220px)]">
+                    <p class="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase sidebar-label">Menu Utama</p>
                     
-                    <button onclick="switchTab('manajemenKelas')" data-tab="manajemenKelas" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-arrows-split-up-and-left w-5 text-emerald-400"></i>
-                        <span>Manajemen Kelas</span>
+                    <button onclick="switchTab('manajemenKelas')" data-tab="manajemenKelas" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Manajemen Kelas">
+                        <i class="fa-solid fa-arrows-split-up-and-left w-5 text-emerald-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Manajemen Kelas</span>
                     </button>
 
-                    <button onclick="switchTab('manajemenSiswa')" data-tab="manajemenSiswa" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-user-graduate w-5 text-blue-400"></i>
-                        <span>Manajemen Siswa</span>
+                    <button onclick="switchTab('manajemenSiswa')" data-tab="manajemenSiswa" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Manajemen Siswa">
+                        <i class="fa-solid fa-user-graduate w-5 text-blue-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Manajemen Siswa</span>
                     </button>
 
-                    <button onclick="switchTab('masterKelas')" data-tab="masterKelas" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-chalkboard w-5 text-indigo-400"></i>
-                        <span>Master Kelas</span>
+                    <button onclick="switchTab('masterKelas')" data-tab="masterKelas" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Master Kelas">
+                        <i class="fa-solid fa-chalkboard w-5 text-indigo-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Master Kelas</span>
                     </button>
 
-                    <button onclick="switchTab('scanPresensi')" data-tab="scanPresensi" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-camera-rotate w-5 text-amber-400"></i>
-                        <span>Scan Presensi</span>
+                    <button onclick="switchTab('scanPresensi')" data-tab="scanPresensi" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Scan Presensi">
+                        <i class="fa-solid fa-camera-rotate w-5 text-amber-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Scan Presensi</span>
                     </button>
 
-                    <button onclick="switchTab('scanSholat')" data-tab="scanSholat" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-mosque w-5 text-teal-400"></i>
-                        <span>Scan Sholat</span>
+                    <button onclick="switchTab('scanSholat')" data-tab="scanSholat" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Scan Sholat">
+                        <i class="fa-solid fa-mosque w-5 text-teal-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Scan Sholat</span>
                     </button>
 
-                    <p class="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-4">Laporan & Rekap</p>
+                    <p class="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-4 sidebar-label">Laporan & Rekap</p>
 
-                    <button onclick="switchTab('rekapPresensi')" data-tab="rekapPresensi" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-clipboard-user w-5 text-purple-400"></i>
-                        <span>Rekap Presensi</span>
+                    <button onclick="switchTab('rekapPresensi')" data-tab="rekapPresensi" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Rekap Presensi">
+                        <i class="fa-solid fa-clipboard-user w-5 text-purple-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Rekap Presensi</span>
                     </button>
 
-                    <button onclick="switchTab('rekapSholat')" data-tab="rekapSholat" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-book-quran w-5 text-indigo-400"></i>
-                        <span>Rekap Sholat</span>
+                    <button onclick="switchTab('rekapSholat')" data-tab="rekapSholat" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Rekap Sholat">
+                        <i class="fa-solid fa-book-quran w-5 text-indigo-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Rekap Sholat</span>
                     </button>
 
-                    <p class="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-4 admin-only">Pengaturan</p>
+                    <p class="px-3 py-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-4 admin-only sidebar-label">Pengaturan</p>
 
-                    <button onclick="switchTab('cetakKartu')" data-tab="cetakKartu" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-address-card w-5 text-pink-400"></i>
-                        <span>Cetak Kartu QR</span>
+                    <button onclick="switchTab('cetakKartu')" data-tab="cetakKartu" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Cetak Kartu QR">
+                        <i class="fa-solid fa-address-card w-5 text-pink-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Cetak Kartu QR</span>
                     </button>
 
-                    <button onclick="switchTab('kelolaGuru')" data-tab="kelolaGuru" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-chalkboard-user w-5 text-cyan-400"></i>
-                        <span>Kelola Guru</span>
+                    <button onclick="switchTab('kelolaGuru')" data-tab="kelolaGuru" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Kelola Guru">
+                        <i class="fa-solid fa-chalkboard-user w-5 text-cyan-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Kelola Guru</span>
                     </button>
 
-                    <button onclick="switchTab('settingJam')" data-tab="settingJam" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white">
-                        <i class="fa-solid fa-clock w-5 text-orange-400"></i>
-                        <span>Jam Operasional</span>
+                    <button onclick="switchTab('settingJam')" data-tab="settingJam" class="nav-btn admin-only w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition hover:bg-slate-800 hover:text-white group relative" title="Jam Operasional">
+                        <i class="fa-solid fa-clock w-5 text-orange-400 flex-shrink-0 text-center"></i>
+                        <span class="sidebar-text">Jam Operasional</span>
                     </button>
                 </nav>
             </div>
 
             <div class="p-4 border-t border-slate-800 bg-slate-950/50">
-                <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center justify-between mb-3 sidebar-footer-top">
                     <div class="flex items-center gap-3 overflow-hidden">
-                        <div class="w-9 h-9 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-sm">
+                        <div class="w-9 h-9 rounded-full bg-slate-700 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
                             <span id="userInitial">A</span>
                         </div>
-                        <div class="truncate">
+                        <div class="sidebar-text truncate">
                             <p id="userName" class="text-sm font-semibold text-white truncate">Administrator</p>
                             <span id="userRoleBadge" class="inline-block px-2 py-0.5 text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-full font-medium uppercase">ADMIN</span>
                         </div>
                     </div>
-                    <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-red-400 transition" title="Keluar">
+                    <button onclick="handleLogout()" class="p-2 text-slate-400 hover:text-red-400 transition flex-shrink-0" title="Keluar">
                         <i class="fa-solid fa-right-from-bracket"></i>
                     </button>
                 </div>
-                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] sidebar-footer-bottom">
                     <div class="flex items-center gap-2">
-                        <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
-                        <span id="dbStatusText" class="text-slate-400 font-medium">Mode Lokal</span>
+                        <span id="dbStatusDot" class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>
+                        <span id="dbStatusText" class="text-slate-400 font-medium sidebar-text">Mode Lokal</span>
                     </div>
-                    <button onclick="loadDataFromSupabase(true)" class="text-slate-400 hover:text-brand-400 transition flex items-center gap-1.5" title="Sinkronkan & Refresh Data">
+                    <button onclick="loadDataFromSupabase(true)" class="text-slate-400 hover:text-brand-400 transition flex items-center gap-1.5 flex-shrink-0" title="Sinkronkan & Refresh Data">
                         <i id="syncIcon" class="fa-solid fa-rotate"></i>
-                        <span>Sync Data</span>
+                        <span class="sidebar-text">Sync Data</span>
                     </button>
                 </div>
             </div>
@@ -864,8 +873,31 @@
                 pulang: '15:00',
                 dhuha_mulai: '08:00',
                 dzuhur_mulai: '12:00'
-            }
+            },
+            isSidebarMinimized: false
         };
+
+        function toggleSidebar() {
+            state.isSidebarMinimized = !state.isSidebarMinimized;
+            const sidebar = document.getElementById('sidebar');
+            const toggleIcon = document.getElementById('sidebarToggleIcon');
+            const texts = document.querySelectorAll('.sidebar-text');
+            const labels = document.querySelectorAll('.sidebar-label');
+            
+            if (state.isSidebarMinimized) {
+                sidebar.classList.remove('md:w-64');
+                sidebar.classList.add('md:w-20');
+                toggleIcon.className = 'fa-solid fa-angles-right';
+                texts.forEach(el => el.classList.add('hidden'));
+                labels.forEach(el => el.classList.add('hidden'));
+            } else {
+                sidebar.classList.remove('md:w-20');
+                sidebar.classList.add('md:w-64');
+                toggleIcon.className = 'fa-solid fa-angles-left';
+                texts.forEach(el => el.classList.remove('hidden'));
+                labels.forEach(el => el.classList.remove('hidden'));
+            }
+        }
 
         async function loadDataFromSupabase(isManual = false) {
             const dot = document.getElementById('dbStatusDot');
