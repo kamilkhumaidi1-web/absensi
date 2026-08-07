@@ -82,7 +82,7 @@
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans">
+<body class="bg-slate-50 text-slate-800 antialiased h-screen overflow-hidden flex flex-col font-sans">
 
     <div id="toastContainer" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
@@ -119,10 +119,10 @@
         </div>
     </div>
 
-    <div id="appContainer" class="hidden min-h-screen flex flex-col md:flex-row">
+    <div id="appContainer" class="hidden flex-1 flex flex-row relative w-full h-full overflow-hidden">
 
         <!-- Sidebar Navigation -->
-        <aside id="sidebar" class="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col justify-between sidebar-transition z-30">
+        <aside id="sidebar" class="w-64 h-full bg-slate-900 text-slate-300 flex-shrink-0 flex flex-col justify-between sidebar-transition z-30">
             <div>
                 <div class="p-5 border-b border-slate-800 flex items-center justify-between">
                     <div class="flex items-center gap-3 overflow-hidden" id="sidebarBrandContainer">
@@ -227,7 +227,7 @@
             </div>
         </aside>
 
-        <main class="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-8">
+        <main class="flex-1 h-full overflow-y-auto bg-slate-50 p-4 md:p-8 relative">
             
             <!-- 1. MANAJEMEN KELAS -->
             <section id="tab-manajemenKelas" class="tab-content hidden space-y-6">
@@ -885,14 +885,14 @@
             const labels = document.querySelectorAll('.sidebar-label');
             
             if (state.isSidebarMinimized) {
-                sidebar.classList.remove('md:w-64');
-                sidebar.classList.add('md:w-20');
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-20');
                 toggleIcon.className = 'fa-solid fa-angles-right';
                 texts.forEach(el => el.classList.add('hidden'));
                 labels.forEach(el => el.classList.add('hidden'));
             } else {
-                sidebar.classList.remove('md:w-20');
-                sidebar.classList.add('md:w-64');
+                sidebar.classList.remove('w-20');
+                sidebar.classList.add('w-64');
                 toggleIcon.className = 'fa-solid fa-angles-left';
                 texts.forEach(el => el.classList.remove('hidden'));
                 labels.forEach(el => el.classList.remove('hidden'));
@@ -983,6 +983,11 @@
 
             if (state.currentUser.role === 'ADMIN') switchTab('manajemenKelas');
             else switchTab('scanPresensi');
+
+            // Auto-minimize sidebar on mobile devices for better space
+            if (window.innerWidth < 768 && !state.isSidebarMinimized) {
+                toggleSidebar();
+            }
 
             const today = getLocalDateString();
             document.getElementById('rekapPresensiDate').value = today;
